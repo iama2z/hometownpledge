@@ -1,63 +1,46 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Wichita Protocol | Community Oath</title>
-    <style>
-        body { font-family: system-ui, -apple-system, sans-serif; background: #f4f4f5; color: #18181b; padding: 2rem; max-width: 600px; margin: 0 auto; }
-        .oath-box { background: white; padding: 2rem; border-left: 4px solid #27272a; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); margin-bottom: 2rem; }
-        .ticker { font-size: 3rem; font-weight: bold; text-align: center; margin: 2rem 0; color: #dc2626; }
-        .ticker-label { font-size: 1rem; color: #52525b; text-align: center; text-transform: uppercase; letter-spacing: 0.05em; }
-        input, button { width: 100%; padding: 0.75rem; margin-bottom: 1rem; border: 1px solid #d4d4d8; border-radius: 4px; font-size: 1rem; box-sizing: border-box; }
-        button { background: #27272a; color: white; border: none; font-weight: bold; cursor: pointer; }
-        button:hover { background: #3f3f46; }
-    </style>
-</head>
-<body>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    <div class="ticker-label">Neighbors Committed</div>
-    <div class="ticker" id="signatureCount">--</div>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBou8Z3xdd2Xb7FJ9mxxTTnpQ9XzzRGx_I",
+    authDomain: "hometownpledge.firebaseapp.com",
+    projectId: "hometownpledge",
+    storageBucket: "hometownpledge.firebasestorage.app",
+    messagingSenderId: "217063602156",
+    appId: "1:217063602156:web:8d06ab67e372a794e6b2c9",
+    measurementId: "G-NH78MP1RX8"
+  };
 
-    <div class="oath-box">
-        <p><em>"I commit to the sovereignty of my community. I believe that power belongs locally, and I will not comply with federal overreach that asks me to compromise the safety, dignity, or rights of my neighbors. I pledge to defend my community through non-violent solidarity and mutual aid. I commit to building the local systems that serve our families and schools, standing openly accountable to the people who live here, and defending the constitutional rights of everyone in my city."</em></p>
-    </div>
+  // Initialize Firebase and Firestore
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-    <form id="oathForm">
-        <input type="text" id="alias" placeholder="First Name or Alias" required>
-        <input type="text" id="zipCode" placeholder="Zip Code" required pattern="[0-9]{5}">
-        <input type="email" id="email" placeholder="Email Address (Optional)">
-        <button type="submit">Sign the Oath</button>
-    </form>
+  // Logic to update ticker and handle signatures
+  const tickerElement = document.getElementById('ticker');
+  const signatureForm = document.getElementById('signatureForm');
 
-    <div id="successMessage" style="display: none; text-align: center; font-weight: bold; color: #16a34a;">
-        Oath recorded. Now, ask 3 neighbors to do the same.
-    </div>
+  // Real-time ticker update
+  onSnapshot(collection(db, "signatures"), (snapshot) => {
+    tickerElement.innerText = snapshot.size;
+  });
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  // Form submission logic
+  signatureForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('name').value;
+    const zip = document.getElementById('zip').value;
 
-        // You will paste your config object right here
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const signaturesRef = collection(db, "signatures");
-
-        // Real-time listener for the live ticker
-        onSnapshot(signaturesRef, (snapshot) => {
-            document.getElementById('signatureCount').innerText = snapshot.size;
-        });
-
-        // Handle Form Submission
-        document.getElementById('oathForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const alias = document.getElementById('alias').
+    try {
+      await addDoc(collection(db, "signatures"), {
+        name: name,
+        zip: zip,
+        timestamp: new Date()
+      });
+      alert("The Wichita Promise has been signed!");
+      signatureForm.reset();
+    } catch (error) {
+      console.error("Error adding signature: ", error);
+    }
+  });
+</script>
