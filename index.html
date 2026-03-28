@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hometown Pledge | Community Oath</title>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
         body { font-family: system-ui, -apple-system, sans-serif; background: #f4f4f5; color: #18181b; padding: 2rem; max-width: 600px; margin: 0 auto; }
         .oath-box { background: white; padding: 2rem; border-left: 4px solid #27272a; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); margin-bottom: 2rem; }
@@ -27,6 +28,7 @@
         <input type="text" id="alias" placeholder="First Name or Alias" required>
         <input type="text" id="zipCode" placeholder="Zip Code" required pattern="[0-9]{5}">
         <input type="email" id="email" placeholder="Email Address (Optional)">
+        <div class="g-recaptcha" data-sitekey="6LdaLZwsAAAAAKFWXg6baInoZhQzyQYlUPVIbNNw" style="margin-bottom: 1rem;"></div>
         <button type="submit">Sign the Oath</button>
     </form>
 
@@ -38,7 +40,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Your specific Hometown Pledge configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBou8Z3xdd2Xb7FJ9mxxTTnpQ9XzzRGx_I",
             authDomain: "hometownpledge.firebaseapp.com",
@@ -53,28 +54,31 @@
         const db = getFirestore(app);
         const signaturesRef = collection(db, "signatures");
 
-        // Real-time listener for the live ticker
         onSnapshot(signaturesRef, (snapshot) => {
             document.getElementById('signatureCount').innerText = snapshot.size;
         });
 
-        // Handle Form Submission
         document.getElementById('oathForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            // Check reCAPTCHA
+            const recaptchaResponse = grecaptcha.getResponse();
+            if (!recaptchaResponse) {
+                alert("Please complete the reCAPTCHA.");
+                return;
+            }
+
             const alias = document.getElementById('alias').value;
             const zip = document.getElementById('zipCode').value;
             const email = document.getElementById('email').value;
 
-            // Build payload dynamically
             const payload = {
                 alias: alias,
                 zipCode: zip,
                 timestamp: serverTimestamp()
             };
-            
-            if (email) {
-                payload.email = email;
-            }
+
+            if (email) payload.email = email;
 
             try {
                 const submitBtn = document.querySelector('button[type="submit"]');
@@ -82,14 +86,16 @@
                 submitBtn.innerText = "Signing...";
 
                 await addDoc(signaturesRef, payload);
-                
+
                 document.getElementById('oathForm').style.display = 'none';
                 document.getElementById('successMessage').style.display = 'block';
             } catch (error) {
                 console.error("Error adding document: ", error);
                 alert("Connection error. Please try again.");
-                document.querySelector('button[type="submit"]').disabled = false;
-                document.querySelector('button[type="submit"]').innerText = "Sign the Oath";
+                const submitBtn = document.querySelector('button[type="submit"]');
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Sign the Oath";
+                grecaptcha.reset();
             }
         });
     </script>
